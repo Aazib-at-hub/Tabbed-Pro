@@ -1,0 +1,173 @@
+{
+  "_note": "Auto-generated project context for Antigravity / Gemini agents. Update when architecture changes.",
+  "project": {
+    "name": "Tabbed Pro",
+    "tagline": "The AI Communication Layer — the layer between you and AI.",
+    "description": "SaaS landing page + internal app + Express API backend + Real LLM Engine. Users enter rough AI prompts, Tabbed scores them across 8 dimensions via real LLM evaluation and streams optimized instructions in real-time.",
+    "rootDir": "c:/Users/SAQIB/Desktop/tabbed-pro-main/tabbed-pro-main"
+  },
+  "stack": {
+    "framework": "React 19 (SPA)",
+    "bundler": "Vite 8",
+    "routing": "react-router-dom v6 (BrowserRouter)",
+    "styling": "Tailwind CSS v4 + vanilla CSS design tokens (OKLCH)",
+    "ui_components": "Radix UI primitives wrapped in shadcn-style components (src/components/ui/)",
+    "icons": "lucide-react",
+    "charts": "recharts",
+    "toasts": "sonner",
+    "forms": "react-hook-form + zod",
+    "backend_server": "Express.js API server (src/server/server.ts)",
+    "database_orm": "Prisma (prisma/schema.prisma, 9 models)",
+    "llm_engine": "Multi-provider abstraction layer (OpenAI, Anthropic, Gemini, Mock) with SSE streaming",
+    "fonts": "Space Grotesk (display), DM Sans (body), JetBrains Mono (code) — loaded from Google Fonts"
+  },
+  "brand": {
+    "name": "Tabbed",
+    "suffix": "Pro",
+    "primary_color": "electric blue / cyan — oklch(0.68 0.19 253) dark / oklch(0.58 0.19 255) light",
+    "theme": "dark-first, light mode toggle available",
+    "logo_asset": "src/assets/tabbed-logo.png.asset.json"
+  },
+  "design_tokens": {
+    "file": "src/styles.css",
+    "key_utilities": ["glass-panel", "text-gradient", "elevate", "elevate-hover", "grid-noise"],
+    "shadow_elegant": "primary-glow drop shadow used on featured cards",
+    "radius": "0.75rem base"
+  },
+  "routing": {
+    "type": "File-based components in src/routes/, assembled in src/App.tsx",
+    "routes": [
+      { "path": "/", "file": "src/routes/index.tsx", "desc": "Public landing page" },
+      {
+        "path": "/login",
+        "file": "src/routes/auth.login.tsx",
+        "desc": "Email & Google OAuth login page"
+      },
+      { "path": "/signup", "file": "src/routes/auth.signup.tsx", "desc": "User registration page" },
+      {
+        "path": "/forgot-password",
+        "file": "src/routes/auth.forgot-password.tsx",
+        "desc": "Password reset request page"
+      },
+      {
+        "path": "/verify-email",
+        "file": "src/routes/auth.verify-email.tsx",
+        "desc": "Email verification page"
+      },
+      {
+        "path": "/onboarding",
+        "file": "src/routes/onboarding.tsx",
+        "desc": "4-Step User Onboarding Wizard"
+      },
+      {
+        "path": "/home",
+        "file": "src/routes/home.tsx",
+        "desc": "App dashboard / quick start (Protected)"
+      },
+      {
+        "path": "/optimize",
+        "file": "src/routes/optimize.tsx",
+        "desc": "Core prompt optimizer with Real LLM Engine + SSE streaming (Protected)"
+      },
+      {
+        "path": "/vault",
+        "file": "src/routes/vault.index.tsx",
+        "desc": "Prompt Vault list (Protected)"
+      },
+      {
+        "path": "/vault/:promptId",
+        "file": "src/routes/vault.$promptId.tsx",
+        "desc": "Individual prompt detail (Protected)"
+      },
+      {
+        "path": "/templates",
+        "file": "src/routes/templates.tsx",
+        "desc": "Template library (Protected)"
+      },
+      {
+        "path": "/analytics",
+        "file": "src/routes/analytics.tsx",
+        "desc": "Prompt score analytics (Protected)"
+      },
+      { "path": "/pricing", "file": "src/routes/pricing.tsx", "desc": "Pricing / plans" },
+      {
+        "path": "/settings/profile",
+        "file": "src/routes/settings.profile.tsx",
+        "desc": "AI Profile settings (Protected)"
+      },
+      {
+        "path": "/settings/extension",
+        "file": "src/routes/settings.extension.tsx",
+        "desc": "Browser extension settings (Protected)"
+      }
+    ]
+  },
+  "backend_and_database": {
+    "server_entry": "src/server/server.ts — Express REST API listening on port 3001",
+    "api_router": "src/server/api-routes.ts — Full REST API endpoints for User, AIProfile, Prompts, Folders, Templates, Workspaces, LLM",
+    "prisma_schema": "prisma/schema.prisma — 9 models: User, AIProfile, Prompt, PromptScore, PromptInsight, Folder, Template, Workspace, WorkspaceMember",
+    "db_engine_fallback": "src/lib/db.ts — LocalStorage engine providing seamless offline persistence for development",
+    "unified_api_client": "src/lib/api-client.ts — Unified API client abstraction used by all React components"
+  },
+  "llm_engine": {
+    "provider_abstraction": "src/server/llm/index.ts — getLLMProvider factory supporting multi-provider adapters",
+    "adapters": [
+      {
+        "name": "OpenAI",
+        "file": "src/server/llm/adapters/openai.ts",
+        "desc": "GPT-4o with SSE streaming and JSON evaluation"
+      },
+      {
+        "name": "Anthropic",
+        "file": "src/server/llm/adapters/anthropic.ts",
+        "desc": "Claude 3.5 Sonnet with SSE streaming"
+      },
+      {
+        "name": "Gemini",
+        "file": "src/server/llm/adapters/gemini.ts",
+        "desc": "Google Gemini 1.5 Flash with SSE streaming"
+      },
+      {
+        "name": "Mock",
+        "file": "src/server/llm/adapters/mock.ts",
+        "desc": "Simulated LLM fallback provider for offline development"
+      }
+    ],
+    "sse_streaming_endpoint": "POST /api/llm/optimize/stream",
+    "prompt_evaluation_endpoint": "POST /api/llm/analyze",
+    "client_llm_sdk": "src/lib/llm-client.ts — analyzePromptLLM and streamOptimizePrompt"
+  },
+  "auth_and_onboarding": {
+    "auth_context": "src/lib/auth-context.tsx — User state, login, signup, password reset, email verification, onboarding state",
+    "protected_route_guard": "src/components/protected-route.tsx — Redirects unauthenticated users to /login and non-onboarded users to /onboarding",
+    "onboarding_wizard": "src/routes/onboarding.tsx — 4-Step wizard collecting role, main AI domain, preferred platforms, and output structure style"
+  },
+  "components": {
+    "app_shell": "src/components/app-shell.tsx — sidebar + topbar layout with user profile menu & logout",
+    "protected_route": "src/components/protected-route.tsx — route guard wrapper",
+    "prompt_composer": "src/components/prompt-composer.tsx — main textarea input with submit button",
+    "score_ring": "src/components/score-ring.tsx — ScoreBar component used in Optimize sidebar",
+    "theme_toggle": "src/components/theme-toggle.tsx — dark/light toggle button",
+    "ui_dir": "src/components/ui/ — shadcn-style Radix wrappers (Button, Card, Badge, Sheet, etc.)"
+  },
+  "optimization_modes": [
+    "general",
+    "coding",
+    "research",
+    "marketing",
+    "business",
+    "learning",
+    "content"
+  ],
+  "score_dimensions": [
+    "clarity",
+    "context",
+    "specificity",
+    "constraints",
+    "role",
+    "outputFormat",
+    "examples",
+    "completeness"
+  ],
+  "supported_models": ["ChatGPT", "Claude", "Gemini", "Perplexity"]
+}

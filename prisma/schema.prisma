@@ -1,0 +1,239 @@
+// This generator block is for future server-side usage (Node.js + PostgreSQL)
+// For the current SPA-first phase, persistence is handled by src/lib/db.ts (localStorage engine)
+// To migrate: set DATABASE_URL env var and run: npx prisma migrate dev
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// USERS & AUTHENTICATION
+// ──────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  avatarUrl     String?
+  emailVerified Boolean   @default(false)
+  isOnboarded   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Subscription & Billing (Stripe)
+  subscriptionTier     String    @default("free") // "free" | "pro" | "teams"
+  subscriptionStatus   String    @default("active") // "active" | "trialing" | "past_due" | "canceled"
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  currentPeriodEnd     DateTime?
+
+  // Relations
+  profile       AIProfile?
+  folders       Folder[]
+  prompts       Prompt[]
+  templates     Template[]
+  workspaces    WorkspaceMember[]
+  ownedWorkspaces Workspace[]
+
+  @@index([email])
+}
+
+model AIProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  profession     String?
+  experience     String?  // "Beginner" | "Intermediate" | "Advanced" | "Expert"
+  mainDomain     String?
+  platforms      String[] // ["ChatGPT", "Claude", "Gemini", "Perplexity"]
+  responseStyle  String?  // "Concise" | "Balanced" | "Detailed" | "Highly Structured"
+  techStack      String?
+  customRules    String?  // free-form instructions injected into every optimization
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// PROMPT VAULT
+// ──────────────────────────────────────────────────────────────────────────────
+
+model Folder {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  icon      String   @default("📁")
+  color     String?  // hex or tailwind token
+
+  prompts   Prompt[]
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Prompt {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folderId         String?
+  folder           Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  workspaceId      String?
+  workspace        Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  title            String
+  rawContent       String
+  optimizedContent String?
+  category         String?
+  mode             String   @default("general") // optimization mode
+  tags             String[] // searchable tags
+  aiPlatform       String?  // "ChatGPT" | "Claude" | "Gemini" | "Perplexity"
+  isFavorite       Boolean  @default(false)
+  isArchived       Boolean  @default(false)
+
+  score            PromptScore?
+  insights         PromptInsight[]
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, folderId])
+  @@index([userId, isFavorite])
+  @@index([userId, category])
+}
+
+model PromptScore {
+  id            String  @id @default(cuid())
+  promptId      String  @unique
+  prompt        Prompt  @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  // Overall computed score (0-100)
+  overall       Int     @default(0)
+
+  // 8 dimension scores (0-100 each)
+  clarity       Int     @default(0)
+  context       Int     @default(0)
+  specificity   Int     @default(0)
+  constraints   Int     @default(0)
+  role          Int     @default(0)
+  outputFormat  Int     @default(0)
+  examples      Int     @default(0)
+  completeness  Int     @default(0)
+
+  // Score after optimization
+  optimizedOverall Int? 
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model PromptInsight {
+  id        String  @id @default(cuid())
+  promptId  String
+  prompt    Prompt  @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  type      String  // "missing" | "suggestion" | "strength"
+  message   String
+  dimension String? // which scoring dimension this relates to
+  impact    String? // "high" | "medium" | "low"
+
+  @@index([promptId])
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// TEMPLATE MARKETPLACE
+// ──────────────────────────────────────────────────────────────────────────────
+
+model Template {
+  id             String  @id @default(cuid())
+  authorId       String?
+  author         User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  workspaceId    String?
+  workspace      Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  title          String
+  description    String
+  category       String
+  promptTemplate String   // the actual template text (may include {{variables}})
+  score          Int      @default(0)
+  usageCount     Int      @default(0)
+  isSystem       Boolean  @default(false) // true = built-in Tabbed template
+  isPublic       Boolean  @default(true)
+  tags           String[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([category])
+  @@index([isSystem])
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// TEAMS & ENTERPRISE (Schema-ready, Phase 3 build)
+// ──────────────────────────────────────────────────────────────────────────────
+
+model Workspace {
+  id                String   @id @default(cuid())
+  ownerId           String
+  owner             User     @relation(fields: [ownerId], references: [id])
+
+  name              String
+  slug              String   @unique
+  logoUrl           String?
+  plan              String   @default("teams") // "teams" | "enterprise"
+
+  // Organization-wide AI Standards
+  enforcedContext   String?  // Company background & tone injected into prompts
+  forbiddenKeywords String[] // Disallowed internal or confidential terms
+  responseTone      String?  // "Professional" | "Technical" | "Direct"
+  minQualityScore   Int      @default(75) // Minimum score threshold
+  defaultModel      String?  // "Claude 3.5 Sonnet" | "GPT-4o"
+
+  members           WorkspaceMember[]
+  invites           WorkspaceInvite[]
+  prompts           Prompt[]
+  templates         Template[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([slug])
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role        String   @default("viewer") // "admin" | "editor" | "viewer"
+  joinedAt    DateTime @default(now())
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+model WorkspaceInvite {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email       String
+  role        String    @default("editor") // "admin" | "editor" | "viewer"
+  status      String    @default("pending") // "pending" | "accepted" | "declined"
+  token       String    @unique
+  invitedAt   DateTime  @default(now())
+  expiresAt   DateTime
+
+  @@index([workspaceId])
+  @@index([email])
+}
